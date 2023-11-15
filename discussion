@@ -1,9 +1,35 @@
 Vivian and I worked on lesson 13 together.
-[Z3 Synthesizer]()
+[Desugaring Tool](https://github.com/willwng/z3-synthesizer/blob/main/synthesizer/ex3.py)
+[Updated Grammar and Z3](https://github.com/willwng/z3-synthesizer/blob/main/synthesizer/ex2.py)
+[Examples](https://github.com/willwng/z3-synthesizer/blob/main/synthesizer/examples)
 
 **Summary**
-- Starting with the example in class
+- Starting with the example in class, we extended the DSL to include boolean operators (`and`, `not`, `xor`, `or`).
+- We wanted the synthesizer to be able to reference more variables than just the hard-coded `x`, so we added a feature
+to allow users to specify variable holes, where the value of the hole may be selected from one of multiple possible
+named variables. 
 
 **Implementation details**
+- We initially wanted to implement boolean operations, but realized that in order to test our implementation in any
+nontrivial way, we needed to extend the desugaring process to permit multiple variables to be used in generated code.
+- We realized that `??` only allowed for variable `x`. To support any choice of variable, we made a desugaring function 
+that took a **variable hole** `{x,y}` and transformed it into `h# ? x : y`. 
+- This approach could be extended to support any number of variables, since the desugaring can be applied recursively.
+- After implementing this new and improved desugaring, we were able to synthesize both of DeMorgan's laws.
 
 **What was the hardest part of the task? How did you solve this problem?**
+- One thing we realized is that the speed of the solver depended heavily on the input being "convenient". For instance, 
+attempting to solve the synthesis problem
+```
+not (x and y)
+(not {x,y}) or (not {x,y})
+```
+crashed Vivian's computer, while
+```
+not (x and y)
+(not {x,y}) or (not {y,x})
+```
+returned almost instantly.
+
+- The desugaring was actually very tricky. We tried at first to do regex matches and replaces, but eventually found it 
+easiest to just linearly scan through the source and replace variable holes explicitly
