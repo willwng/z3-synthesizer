@@ -1,0 +1,2 @@
+not (x or y)
+(not {x,y}) and (not {y,x})

@@ -11,12 +11,16 @@ GRAMMAR = """
 ?sum: term
   | sum "+" term        -> add
   | sum "-" term        -> sub
+  | term "or" item      -> or
 
 ?term: item
   | term "*"  item      -> mul
   | term "/"  item      -> div
   | term ">>" item      -> shr
   | term "<<" item      -> shl
+  | term "xor" item     -> xor
+  | term "and" item     -> and
+  | "not" item          -> not
 
 ?item: NUMBER           -> num
   | "-" item            -> neg
@@ -38,9 +42,10 @@ def interp(tree, lookup):
     """
 
     op = tree.data
-    if op in ('add', 'sub', 'mul', 'div', 'shl', 'shr'):  # Binary operators.
+    if op in ('add', 'sub', 'mul', 'div', 'shl', 'shr', 'and', 'or', 'xor'):  # Binary operators.
         lhs = interp(tree.children[0], lookup)
         rhs = interp(tree.children[1], lookup)
+        # Integer operations
         if op == 'add':
             return lhs + rhs
         elif op == 'sub':
@@ -53,6 +58,16 @@ def interp(tree, lookup):
             return lhs << rhs
         elif op == 'shr':
             return lhs >> rhs
+        # Boolean operations
+        elif op == 'and':
+            return lhs & rhs
+        elif op == 'or':
+            return lhs | rhs
+        elif op == 'xor':
+            return lhs ^ rhs
+    elif op == 'not':
+        sub = interp(tree.children[0], lookup)
+        return ~sub
     elif op == 'neg':  # Negation.
         sub = interp(tree.children[0], lookup)
         return -sub
@@ -83,7 +98,7 @@ def pretty(tree, subst={}, paren=False):
             return s
 
     op = tree.data
-    if op in ('add', 'sub', 'mul', 'div', 'shl', 'shr'):
+    if op in ('add', 'sub', 'mul', 'div', 'shl', 'shr', 'and', 'or', 'xor'):
         lhs = pretty(tree.children[0], subst, True)
         rhs = pretty(tree.children[1], subst, True)
         c = {
@@ -93,11 +108,17 @@ def pretty(tree, subst={}, paren=False):
             'div': '/',
             'shl': '<<',
             'shr': '>>',
+            'and': 'and',
+            'or': 'or',
+            'xor': 'xor'
         }[op]
         return par('{} {} {}'.format(lhs, c, rhs))
     elif op == 'neg':
         sub = pretty(tree.children[0], subst)
         return '-{}'.format(sub, True)
+    elif op == 'not':
+        sub = pretty(tree.children[0], subst)
+        return 'not {}'.format(sub, True)
     elif op == 'num':
         return tree.children[0]
     elif op == 'var':
@@ -138,7 +159,6 @@ def z3_expr(tree, vars=None):
             v = z3.BitVec(name, 8)
             vars[name] = v
             return v
-
     return interp(tree, get_var), vars
 
 

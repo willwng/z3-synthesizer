@@ -1,7 +1,35 @@
 import ex2
 import sys
 import lark
+import re
 
+holes = 0
+
+def desugar_hole_var(source):
+    global holes
+    # such a hacky way
+    buffer = ""
+    var_buffer = ""
+    reading_vars = False
+    for i in range(len(source)):
+        curr = source[i]
+        if curr == "{":
+            reading_vars = True
+        elif curr == "}":
+            # Flush the var_buffer into buffer
+            stuff = var_buffer.split(",")
+            var_buffer = ""
+            var1 = stuff[0]
+            var2 = stuff[1]
+            buffer += f"(h{holes} ? {var1} : {var2})"
+            holes += 1
+            reading_vars = False
+        elif reading_vars: 
+            var_buffer += curr
+        else:
+            buffer += curr
+
+    return buffer
 
 def desugar_hole(source):
     parts = source.split('??')
@@ -36,7 +64,8 @@ def simplify(tree, subst={}):
 
 def ex3(source):
     src1, src2 = source.strip().split('\n')
-    src2 = desugar_hole(src2)  # Allow ?? in the sketch part.
+    # src2 = desugar_hole(src2)  # Allow ?? in the sketch part.
+    src2 = desugar_hole_var(src2)  # Allow ?? in the sketch part.
 
     parser = lark.Lark(ex2.GRAMMAR)
     tree1 = parser.parse(src1)
